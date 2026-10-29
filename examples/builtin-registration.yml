@@ -1,0 +1,9 @@
+# For a compatible DSH distribution maintainer, not a standalone install bundle.
+# The Web bundle must declare the package dependency and host the required APIs.
+# Keep only one enabled nps-notifier row; do not enable the legacy adapter.
+- insert:
+    - id: nps-notifier
+      name: '@deepseek-ai/dsh-host-nps-notifier'
+      disabled: !!js process.platform !== 'win32'
+      config:
+        port: 17877

@@ -1,0 +1,45 @@
+{
+  "name": "@deepseek-ai/dsh-host-nps-notifier",
+  "version": "0.2.1-rc.2",
+  "private": true,
+  "description": "Community-maintained DSH to NPS integration for compatible DSH builds",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
+    "./package.json": "./package.json"
+  },
+  "files": ["lib/index.js", "lib/types/**/*.d.ts", "runtime/*.mjs"],
+  "license": "MIT",
+  "engines": { "node": "^22.19.0 || >=24.0.0" },
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test.mjs",
+    "test:vitest": "vitest run",
+    "release:package": "node scripts/package-release.mjs",
+    "release:verify": "node scripts/verify-release.mjs",
+    "privacy:scan": "node scripts/privacy-scan.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.5",
+    "@deepseek-ai/cordis-plugin-loader": "~1.0.6",
+    "@deepseek-ai/dsh-agent": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-app-boot": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-cmdline": "0.2.1-rc.2"
+  },
+  "dependencies": { "@deepseek-ai/schemastery": "~3.18.5" },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/cordis-plugin-loader": "1.0.6",
+    "@deepseek-ai/dsh-agent": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-app-boot": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-cmdline": "0.2.1-rc.2",
+    "@types/node": "24.10.0",
+    "tsdown": "0.22.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11",
+    "fflate": "0.8.2"
+  }
+}
