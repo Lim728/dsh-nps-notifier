@@ -29,6 +29,8 @@ No complete compatible DSH distribution is attached to this release. Distributio
 
 NPS must separately provide NPS.Plugin.AiCliNotifier with local /notify and the /state metadata used for retention recovery. Same-tool display filtering and reminder diagnostics are NPS-side features, not this plugin's source or binary. Installing this package does not replace NPS files.
 
+Selected-session names additionally require the bounded, presentation-only `POST /dsh-selection` interface described in [SESSION-NAMES.md](SESSION-NAMES.md). The DSH sender and selection adapter are included here; NPS reference sources and binaries are not. A compatible DSH frontend/Remote adapter must emit `api-session/presentation` separately from interactive readiness. The optional patch tool checks all six expected companion file shapes before writing and requires a backup destination when applying changes. This remains a build-specific adapter, not an upgrade-independent extension or proof of Desktop compatibility.
+
 ## Dependencies and registration
 
 Node supports ^22.19.0 or >=24.0.0. Runtime dependencies remain external: Cordis ~4.0.5, loader ~1.0.6, Schemastery ~3.18.5, and DSH agent/app-boot/cmdline 0.2.1-rc.2. Host peer instances must be shared, not bundled as a second Cordis runtime.

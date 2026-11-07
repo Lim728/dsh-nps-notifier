@@ -5,7 +5,7 @@ import { expect, it } from 'vitest'
 
 const directory = fileURLToPath(new URL('.', import.meta.url))
 
-for (const suite of ['restored-ready-tests.mjs', 'finished-resume-tests.mjs', 'permanent-lifecycle-tests.mjs', 'packaged-loader-tests.mjs', 'reception-capture-tests.mjs']) {
+for (const suite of ['restored-ready-tests.mjs', 'finished-resume-tests.mjs', 'permanent-lifecycle-tests.mjs', 'packaged-loader-tests.mjs', 'reception-capture-tests.mjs', 'selection-tests.mjs']) {
   it(suite, () => {
     const args = suite === 'packaged-loader-tests.mjs' ? [] : ['--import', './offline-network-guard.mjs']
     const output = execFileSync(process.execPath, [...args, suite], { cwd: directory, encoding: 'utf8', timeout: 120000, windowsHide: true })

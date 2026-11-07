@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Forward selected-session names over a separate local metadata channel, including rename, focus, restore and reconnection updates.
+- Preserve lifecycle identity, task-state admission and existing heartbeat/terminal protections during name updates.
+- Add a guarded, backup-required selection adapter for the tested DSH companion build and document the NPS receiver contract.
+- Add selection regressions and real Loader/isolated HTTP coverage. NPS reference sources and binaries remain outside this repository.
+
 ## v0.1.0-preview.1 — Pre-release
 
 First community preview of the DSH NPS integration. The release tag is independent of the retained component version 0.2.1-rc.2.

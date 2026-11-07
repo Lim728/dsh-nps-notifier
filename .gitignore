@@ -11,3 +11,8 @@ coverage/
 *.bak
 .DS_Store
 Thumbs.db
+**/bin/
+**/obj/
+# Downloaded NPS reference sources and local integration experiments.
+/companion/nps/
+.local/

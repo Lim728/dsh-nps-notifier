@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const cwd = fileURLToPath(new URL('../tests', import.meta.url));
-const suites = ['restored-ready-tests.mjs', 'finished-resume-tests.mjs', 'permanent-lifecycle-tests.mjs', 'packaged-loader-tests.mjs', 'reception-capture-tests.mjs'];
+const suites = ['restored-ready-tests.mjs', 'finished-resume-tests.mjs', 'permanent-lifecycle-tests.mjs', 'packaged-loader-tests.mjs', 'reception-capture-tests.mjs', 'selection-tests.mjs'];
 for (const suite of suites) {
   const guard = suite === 'packaged-loader-tests.mjs' ? [] : ['--import', './offline-network-guard.mjs'];
   const output = execFileSync(process.execPath, [...guard, suite], { cwd, encoding: 'utf8', timeout: 120000, windowsHide: true });

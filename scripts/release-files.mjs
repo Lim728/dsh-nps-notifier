@@ -1,7 +1,7 @@
 export const runtimeFiles = [
   'observer.mjs', 'running-controller.mjs', 'forward-core.mjs', 'forward-bridge.mjs',
   'forwarder.mjs', 'forward-http.mjs', 'heartbeat-controller.mjs', 'state-reader.mjs',
-  'recorder.mjs', 'handshake-diagnostics.mjs', 'reception-capture.mjs',
+  'recorder.mjs', 'handshake-diagnostics.mjs', 'reception-capture.mjs', 'selection-controller.mjs',
 ];
 export const releaseFiles = [
   'README.md', 'LICENSE', 'checksums.sha256', 'docs/README.md', 'plugin/package.json',

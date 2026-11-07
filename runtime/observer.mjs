@@ -11,6 +11,8 @@ import {spawn as spawnChild} from 'node:child_process';
 import {LIMITS} from './forward-core.mjs';
 import {createRecorder,writeSnapshot} from './recorder.mjs';
 import {createReceptionCapture} from './reception-capture.mjs';
+import {createSelectionController} from './selection-controller.mjs';
+import {createSelectionTransport} from './forward-http.mjs';
 // The worker belongs to this mount and uses only the plugin-owned diagnostic directory.
 const FOUR_STATUS_WORKER=`
 const {createWorkerRuntime}=await import(process.argv[1]);
@@ -76,20 +78,21 @@ export function createObserver(base, clock=()=>performance.now(), wall=()=>Date.
   function subscribed(){diag.subscribed=true;diag.phase='subscribed';save();}
   save();return {handle,stop,subscribed,identityFor,release,snapshot:()=>({...state,recording:recorder.snapshot(),sessions:sessions.size})};
 }
-export function mountObserver(ctx,{base,bridgeFactory=createBridge,heartbeatEnabled=false,heartbeatFactory=createHeartbeatController,runningEnabled=false,runningFactory=createRunningController,resumeEnabled=false,stateReaderFactory=createStateReader,clock=()=>performance.now(),wall=()=>Date.now(),schedule=setTimeout,unschedule=clearTimeout,recorderOptions={},port=17877}={}){
+export function mountObserver(ctx,{base,bridgeFactory=createBridge,heartbeatEnabled=false,heartbeatFactory=createHeartbeatController,runningEnabled=false,runningFactory=createRunningController,resumeEnabled=false,stateReaderFactory=createStateReader,selectionEnabled=false,selectionTransportFactory=createSelectionTransport,clock=()=>performance.now(),wall=()=>Date.now(),schedule=setTimeout,unschedule=clearTimeout,recorderOptions={},port=17877}={}){
   // Diagnostic availability never controls activation.
   try{fs.mkdirSync(base,{recursive:true});}catch(error){/* Recorder reports bounded write failure. */}
-  let bridge,heartbeat,running,reader,capture;let mounted=true;const off=[];
+  let bridge,heartbeat,running,reader,capture,selection;let mounted=true;const off=[];
+  let readTitle=()=>undefined;
   // Cordis restricts registry access to contexts declaring the agents dependency.
   let heartbeatAgent=typeof ctx.inject==='function'?()=>undefined:id=>ctx.agents?.get(id);
   const observer=createObserver(base,clock,wall,{recorderOptions,
     record:(r,session)=>{if(r.type==='turn/start')heartbeat?.start(r,session);try{running?.observeRecord?.(r,session);}catch{}const queued=bridge?.enqueue(r);capture?.mark('enqueue',session,{type:r.type,time:r.time,seq:r.seq,data:{turn:r.turn}},queued?'queued':'not_queued');},
     trace:(...args)=>capture?.mark(...args),
     isLive:session=>heartbeatAgent(session.id)?.session===session,
-    stop:()=>{running?.stop();reader?.stop();heartbeat?.stop();bridge?.stop();}
+    stop:()=>{selection?.stop();running?.stop();reader?.stop();heartbeat?.stop();bridge?.stop();}
   });
   if(!observer)return null;
-  function stop(){if(!mounted)return;mounted=false;capture?.stop();running?.stop();reader?.stop();for(const unsubscribe of off.splice(0))unsubscribe();heartbeat?.stop();observer.stop('unloaded');bridge?.stop();}
+  function stop(){if(!mounted)return;mounted=false;selection?.stop();capture?.stop();running?.stop();reader?.stop();for(const unsubscribe of off.splice(0))unsubscribe();heartbeat?.stop();observer.stop('unloaded');bridge?.stop();}
   try{
     capture=createReceptionCapture(ctx,{base,identityFor:observer.identityFor,getAgent:id=>heartbeatAgent(id),getInstance:()=>bridge?.snapshot().instance,getControl:()=>running?.snapshot(),now:wall,mono:clock,schedule,unschedule});
     if(resumeEnabled===true)reader=stateReaderFactory({schedule,unschedule,port});
@@ -98,11 +101,17 @@ export function mountObserver(ctx,{base,bridgeFactory=createBridge,heartbeatEnab
       allowHeartbeat:r=>heartbeat?.eligible(r)===true,
       allowRunning:r=>running?.eligible(r)===true,
       authorizeRunning:r=>running?.authorize(r)??Promise.resolve(false),
-      onReady:()=>running?.considerAll(),
+      onReady:()=>{running?.considerAll();selection?.consider();},
       onResult:(r,result)=>{heartbeat?.acknowledge(r,result);running?.acknowledge?.(r,result);},
       onStop:()=>stop()
     });
     if(!mounted){bridge.stop();return null;}
+    if(selectionEnabled){
+      selection=createSelectionController({getAgent:id=>heartbeatAgent(id),getTitle:session=>readTitle(session),identityFor:observer.identityFor,bridge,transport:selectionTransportFactory({port,schedule,unschedule}),schedule,unschedule});
+      selection.attach(ctx);
+      const titles=ctx.inject?.(['sessionTitle'],scope=>{readTitle=session=>scope.sessionTitle.get(session)?.title;scope.effect(()=>()=>{readTitle=()=>undefined;});});
+      off.push(()=>{const disposal=titles?.dispose?.();disposal?.catch?.(()=>{});});
+    }
     if(heartbeatEnabled===true)heartbeat=heartbeatFactory({getAgent:id=>heartbeatAgent(id),bridge,now:wall,mono:clock,schedule,unschedule});
     off.push(ctx.on('session/event',(session,event)=>{
       const traced=event.type==='turn/start'||event.type==='turn/end';
@@ -145,7 +154,7 @@ export function mountObserver(ctx,{base,bridgeFactory=createBridge,heartbeatEnab
       off.push(()=>{const disposal=fiber?.dispose?.();disposal?.catch?.(()=>{});});
     }
     ctx.effect(()=>stop);observer.subscribed();
-    return {stop,heartbeat,observer,bridge,get running(){return running;}};
+    return {stop,heartbeat,observer,bridge,selection,get running(){return running;}};
   }catch{stop();return null;}
 }
 // Register synchronously: boot commits appReady only after plugin registration.
@@ -181,7 +190,7 @@ export function mountAfterAppReady(ctx,{defer=setImmediate,cancelDefer=clearImme
 
 /** Register the shipped plugin with all previously accepted status controls. */
 export function startBuiltin(ctx,{base,port}){
-  const owner=mountAfterAppReady(ctx,{base,port,bridgeFactory:createFourStatusBridge,heartbeatEnabled:true,runningEnabled:true,resumeEnabled:true});
+  const owner=mountAfterAppReady(ctx,{base,port,bridgeFactory:createFourStatusBridge,heartbeatEnabled:true,runningEnabled:true,resumeEnabled:true,selectionEnabled:true});
   if(!owner)throw new Error('nps_notifier_registration_failed');
   return owner;
 }

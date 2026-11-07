@@ -32,3 +32,13 @@ These are historical acceptance results, not tests repeated during release prepa
 - Compatibility with arbitrary official DSH builds, other Node/platform combinations and independent Desktop backends is not established.
 
 Current NPS retention of finished=10s and error=30s is configuration, not a universal protocol. This plugin reads actual retention metadata for finished recovery. NPS display filtering and reminder diagnostics are companion features not contained in this release.
+
+## 当前会话名称同步（2026-11-06）
+
+- 六组 Node.js 回归通过，包括选择控制器的标题、切换、乱序、重试、失联、后台页面优先级，以及真实 Loader/子进程和隔离 HTTP 链路。
+- 配套 DSH 导航类和 Host/Client 严格 Remote codecs 已对本机兼容构建做内存补丁验证。
+- NPS 配套源码编译通过；现有离线回归及新增的选择、改名、生命周期隔离和无重复提醒检查通过。真实进程分类检查在离线模式下跳过。
+- 实机使用 DSH 网页切换命名会话，已核对 NPS `/state` 中的当前选择、会话标题和 source 一致，并仍保持 running。Widget 标签已通过本机接口观察到 `DSH · 会话名称 运行中`。
+- 改名通过自动化回归覆盖；未修改已有用户会话的名称，未发送模型任务。灵动岛像素呈现与 Comet 内的手动改名未作视觉验收，不能把接口结果当作截图证据。
+
+NPS 端检查属于跨项目的本机验证。本仓库只提交 DSH 侧实现、接口契约和隔离测试，不分发下载的 NPS 参考源码、Codex 修复、DLL 或现场记录。独立 DSH Desktop 后端仍未验收。

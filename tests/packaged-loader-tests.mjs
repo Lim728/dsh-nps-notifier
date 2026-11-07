@@ -10,7 +10,7 @@ import { boot } from '@deepseek-ai/dsh-app-boot';
 const packageDir = process.argv[2] ? path.resolve(process.argv[2]) : fileURLToPath(new URL('..', import.meta.url));
 const entry = pathToFileURL(path.join(packageDir, 'lib', 'index.js')).href;
 const home = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-nps-loader-'));
-const contexts = [], payloads = [], rows = new Map();
+const contexts = [], payloads = [], rows = new Map(), selections = [];
 let count = 0, serial = 0;
 const check = (value, message) => { assert.ok(value, message); count++; };
 const equal = (a, b, message) => { assert.deepEqual(a, b, message); count++; };
@@ -24,6 +24,12 @@ const server = http.createServer((req, res) => {
   res.setHeader('Content-Type', 'application/json');
   if (req.method === 'GET' && req.url === '/state') {
     res.end(JSON.stringify({ ok: true, finishedWidgetRetentionSec: 1, sessions: [...rows.values()] })); return;
+  }
+  if(req.method==='POST'&&req.url==='/dsh-selection'){
+    let text='';req.on('data',chunk=>{text+=chunk;});req.on('end',()=>{
+      const value=JSON.parse(text);selections.push(value);
+      res.end(JSON.stringify({ok:true,instance:value.instance,revision:value.revision}));
+    });return;
   }
   if (req.method !== 'POST' || req.url !== '/notify') { res.writeHead(404).end('{}'); return; }
   let text = '';
@@ -50,15 +56,16 @@ async function fixture({ legacy = false, disabledLegacy = false, duplicate = fal
   if (legacy || disabledLegacy) entries.unshift({ id: 'nps-dsh-bounded-observer', name: 'cordis:legacy', disabled: disabledLegacy });
   if (duplicate) entries.push({ id: 'nps-notifier-duplicate', name: entry, config: { port } });
   fs.writeFileSync(config, JSON.stringify(entries));
-  const registry = new Map(), callbacks = new Set();
+  const registry = new Map(), callbacks = new Set(), titles = new Map();
   const ctx = await boot('nps-test', config, [], host => {
     host.provide('profileContext', { dir });
     host.provide('agents', { get: id => registry.get(id) });
+    host.provide('sessionTitle', {get:session=>({title:titles.get(session.id)??''})});
     host.provide('appReady', { onReady(fn) { callbacks.add(fn); return () => callbacks.delete(fn); } });
     host.loader.builtins.legacy = { name: 'legacy-fixture', apply() {} };
   });
   contexts.push(ctx);
-  return { ctx, dir, callbacks, registry, ready() { for (const fn of [...callbacks]) fn(); },
+  return { ctx, dir, callbacks, registry, titles, ready() { for (const fn of [...callbacks]) fn(); },
     bridge() { try { return JSON.parse(fs.readFileSync(path.join(dir, 'nps-notifier', 'bridge-status.json'), 'utf8')); } catch { return null; } } };
 }
 function agent(f, id) {
@@ -130,6 +137,23 @@ try {
   await legacyEntry.update({ disabled: false });
   equal(changed.bridge()?.phase, 'stopped', 'late legacy activation stops builtin before forwarding can overlap');
   equal(payloads.length, snapshot, 'failed composition cannot forward');
+  const selected=await fixture();selected.ready();
+  await until(()=>selected.bridge()?.phase==='ready','selection fixture starts');
+  const sa=agent(selected,'title-a'),sb=agent(selected,'title-b');
+  selected.titles.set('title-a','选中 A');selected.titles.set('title-b','选中 B');
+  const signalA=new AbortController(),signalB=new AbortController();
+  selected.ctx.emit('api-session/presentation',{agent:sa,signal:signalA.signal});
+  await until(()=>selections.at(-1)?.sessionTitle==='选中 A','restored title reaches dedicated HTTP endpoint');
+  equal(payloads.length,snapshot,'presentation never grants running readiness');
+  const firstSource=selections.at(-1).source;
+  check(firstSource.startsWith('dsh:'+selected.bridge().instance+':'),'selection source shares worker instance');
+  selected.ctx.emit('api-session/presentation',{agent:sb,signal:signalB.signal});signalA.abort();
+  await until(()=>selections.at(-1)?.sessionTitle==='选中 B','chat switch reaches HTTP endpoint');
+  selected.titles.set('title-b','B 已改名');selected.ctx.emit('session/event',sb.session,{type:'session/title',data:{title:'B 已改名'}});
+  await until(()=>selections.at(-1)?.sessionTitle==='B 已改名','rename reaches HTTP endpoint');
+  equal(payloads.length,snapshot,'switch and rename never post a lifecycle event');
+  signalB.abort();await until(()=>selections.at(-1)?.source===null,'view release clears presentation');
+  await selected.ctx.fiber.dispose();
   console.log(JSON.stringify({ suite: 'packaged Loader + real child IPC + isolated HTTP stub', passed: count, failed: 0, skipped: 0, realNpsRequests: 0 }));
 } finally {
   for (const ctx of contexts.reverse()) await ctx.fiber.dispose();

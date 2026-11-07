@@ -26,7 +26,9 @@ Building this component does not build the companion DSH host extensions. See CO
 
 ## Offline tests
 
-pnpm test runs five existing synthetic suites. Four preload offline-network-guard.mjs, which denies network and process creation. The packaged-loader suite deliberately starts a test worker and an ephemeral loopback HTTP stub; it rejects the real NPS port 17877. It does not submit notifications to NPS or run natural DSH tasks.
+pnpm test runs six regression suites. Five preload offline-network-guard.mjs, which denies network and process creation. The packaged-loader suite deliberately starts a test worker and an ephemeral loopback HTTP stub; it rejects the real NPS port 17877. It verifies both lifecycle notifications and the separate selection endpoint without submitting requests to NPS or running natural DSH tasks.
+
+The selection suite covers title changes, ordering, retries, focus priority, view release and disposal with synthetic sessions. It runs without a globally installed DSH. Optionally set DSH_SELECTION_PACKAGES to a compatible host's package directory to check companion navigation and Remote codecs in memory; no installed files are modified by that check.
 
 The tests use generated temporary directories, synthetic identities and virtual clocks; no actual session histories are required. Duplicate-owner and legacy-adapter rejection warnings are expected negative cases. Test logs are not committed or attached to releases.
 
@@ -41,9 +43,9 @@ node scripts/verify-release.mjs <new-output-directory>
 
 Replace the angle-bracket arguments with your selected directories. These script paths and argument forms were executed for this preview. The first preview uses the previously approved artifact directory; this preserves the original runtime bytes and two declarations. An archive built from new artifacts must be validated as a new artifact set.
 
-Packaging uses a strict 19-file allowlist. Only release documentation, sanitized package metadata and LICENSE accompany the existing runtime and declarations. No source, tests, node_modules, logs, credentials or host installation is copied. The runtime package keeps its internal name/version but drops development and publishing fields.
+Packaging uses the strict file allowlist in scripts/release-files.mjs, including the selection controller. Only release documentation, sanitized package metadata and LICENSE accompany the runtime and declarations. No source, tests, downloaded NPS reference project, node_modules, logs, credentials or host installation is copied. The runtime package keeps its internal name/version but drops development and publishing fields.
 
-Verification decompresses the ZIP into a unique temporary directory, checks its exact file list, compares extracted bytes with the package tree and verifies all 18 inner checksums. Only then does it write release-checksums.sha256 for the ZIP and standalone checksums.sha256. A manifest never hashes itself.
+Verification decompresses the ZIP into a unique temporary directory, checks its exact file list, compares extracted bytes with the package tree and verifies every inner checksum. Only then does it write release-checksums.sha256 for the ZIP and standalone checksums.sha256. A manifest never hashes itself.
 
 After reviewing and staging explicit source files, run:
 

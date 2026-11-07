@@ -2,6 +2,8 @@
 
 DeepSeek Harness／DSH 的会话状态转发插件，用于将 DSH 状态发送给 NPS CLI／NotchPeninsula，在灵动岛显示。
 
+当前源码另含独立的会话名称发送通道：切换、改名、恢复与重连可更新本机展示元数据，不改变任务状态或心跳资格。此功能还需要兼容的 DSH 页面选择接口及 NPS 的 `POST /dsh-selection` 接收端；安装本组件不会修改或更新 NPS。配套补丁和接口契约见源码仓库的 [会话名称说明](https://github.com/Lim728/dsh-nps-notifier/blob/main/docs/SESSION-NAMES.md)。旧版发布附件的内容以其标签和校验文件为准。
+
 插件名称：DSH NPS Builtin / @deepseek-ai/dsh-host-nps-notifier
 
 GitHub 仓库：[https://github.com/Lim728/dsh-nps-notifier](https://github.com/Lim728/dsh-nps-notifier)
